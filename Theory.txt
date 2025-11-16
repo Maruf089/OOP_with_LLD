@@ -27,3 +27,8 @@ Internal working not knowing , only behavior knows - Abstraction
 - Encapsulation hides how data is stored.
 - Abstraction hides how things work.
 Encapsulation helps abstraction
+
+When we imagine of an object, we have a blueprint in our brain. We crete object based on that blueprint.
+This generic blueprint is called Class.
+We create Class using prominent property and behavior of an object.
+
