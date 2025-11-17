@@ -66,7 +66,7 @@ image.load();
 
 
 // So new requirement/changes makes it hard to maintain. It does not gives flexibility.
-1. Exception occure / new exception handling method needed
+1. Exception occur / new exception handling method needed
 2. new requirement require lots of changes to make it works
 
 that's why we should avoid inheritance.
