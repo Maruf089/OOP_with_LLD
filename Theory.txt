@@ -20,6 +20,9 @@ Real world scenario :
 - Abstraction : Train ticket purchase process. We just stand in line and give money for ticket. Then we get the ticket for certain
 destination. We don't know the process for ticket internal processing for make it happen.
 - Encapsulation : Ticket purchasing room is locked for everyone. No one can enter. So whole process of purchasing ticket is encapsulated by the room.
+- Polymorphism : Export can be done by several customer. By creating subtype of Customer class Polymorphism can be achieved.
+Different customer implements the export() method of Interface Export.
+
 
 
 Internal working not knowing , only behavior knows - Abstraction
@@ -33,5 +36,10 @@ This generic blueprint is called Class.
 We create Class using prominent property and behavior of an object.
 
 - Encapsulation provides security by hiding data
-- same behavior but they do it differently -> Polymorphism
+- Polymorphism : same behavior but they do it differently
 
+Polymorphism can be achieved by subtype polymorphism.
+
+Class is a type. We create subtype for polymorphism.
+
+- Inheritance is good and needed for template method patter
