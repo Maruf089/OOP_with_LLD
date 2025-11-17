@@ -34,3 +34,4 @@ We create Class using prominent property and behavior of an object.
 
 - Encapsulation provides security by hiding data
 - same behavior but they do it differently -> Polymorphism
+
