@@ -14,7 +14,7 @@ Four Principles of Object :
 - Abstraction : Objects does not know how another object performs task internally
 - Encapsulation : Objects doest not manipulation of data inside of it through protection mechanism
 - Decomposition : A system can be decomposed to smaller objects
-- Generalization : Some objects might have common behaviors
+- Generalization : Some objects might have common behaviors ( interface
 
 Real world scenario :
 - Abstraction : Train ticket purchase process. We just stand in line and give money for ticket. Then we get the ticket for certain
@@ -22,6 +22,20 @@ destination. We don't know the process for ticket internal processing for make i
 - Encapsulation : Ticket purchasing room is locked for everyone. No one can enter. So whole process of purchasing ticket is encapsulated by the room.
 - Polymorphism : Export can be done by several customer. By creating subtype of Customer class Polymorphism can be achieved.
 Different customer implements the export() method of Interface Export.
+
+Composition - room can't exist without home/hotel. If home destroyed, room is also destroyed
+
+Account Class - name,id,password
+Student Class - composed of account class
+here, Student can't exist without Account info
+This is a example of Composition
+
+- Composition - One can't exist without another and is composed of another
+in the above Student can't exist without Account and is composed of Account
+
+- Aggregation - ( one to many relationship ) : Library and Book
+- Association - Two objects exist independently but they can interact ( many to many relationship ) : Course and Student
+
 
 
 
@@ -43,6 +57,8 @@ Polymorphism can be achieved by subtype polymorphism.
 Class is a type. We create subtype for polymorphism.
 
 - Inheritance is good and needed for template method pattern
+- Inheritance is working fine when we need both hierarchical reuse of code and subtype polymorphism
+When we need only one like hierarchical reuse of code or subtype polymorphism, Inheritance is not good. It will break.
 
 // So new requirement/changes makes it hard to maintain. It does not gives flexibility.
 1. Exception occur / new exception handling method needed
