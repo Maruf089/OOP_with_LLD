@@ -458,3 +458,272 @@ WHERE salary > (
 );
 
 
+31. Rank employees by salary (global rank)
+
+Tables: Employees
+
+✅ 1. Using DENSE_RANK() – ties get the same rank, no gaps
+
+SELECT emp_name, salary,
+       DENSE_RANK() OVER (ORDER BY salary DESC) AS salary_rank
+FROM Employees
+ORDER BY salary_rank;
+
+Example Output:
+emp_name	salary	salary_rank
+John	90000	1
+Sarah	85000	2
+David	85000	2
+Alice	80000	3
+
+✅ 2. Using RANK() – ties get same rank, gaps exist
+
+SELECT emp_name, salary,
+       RANK() OVER (ORDER BY salary DESC) AS salary_rank
+FROM Employees
+ORDER BY salary_rank;
+
+Example Output:
+emp_name	salary	salary_rank
+John	90000	1
+Sarah	85000	2
+David	85000	2
+Alice	80000	4
+
+✅ 3. Using ROW_NUMBER() – unique rank for every employee
+
+SELECT emp_name, salary,
+       ROW_NUMBER() OVER (ORDER BY salary DESC) AS salary_rank
+FROM Employees
+ORDER BY salary_rank;
+
+Example Output:
+emp_name	salary	salary_rank
+John	90000	1
+Sarah	85000	2
+David	85000	3
+Alice	80000	4
+
+
+
+31–40: Window Functions, Ranking, Strings, Dates
+31. Rank employees by salary (global rank)
+
+Tables: Employees
+-- Answer 1 (RANK)
+SELECT emp_id, emp_name, salary,
+       RANK() OVER (ORDER BY salary DESC) AS salary_rank
+FROM Employees;
+
+
+32. Rank employees by salary within each department
+
+Tables: Employees
+SELECT emp_id, emp_name, salary,
+       ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS salary_rank
+FROM Employees
+ORDER BY dept_id, salary_rank
+
+✅ 1. Using DENSE_RANK() – ties get same rank, no gaps
+SELECT emp_name, dept_id, salary,
+       DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS dept_salary_rank
+FROM Employees
+ORDER BY dept_id, dept_salary_rank;
+
+Example Output:
+emp_name	dept_id	salary	dept_salary_rank
+John	1	90000	1
+Sarah	1	85000	2
+David	1	85000	2
+Alice	1	80000	3
+Bob	    2	95000	1
+Carol	2	90000	2
+
+
+
+34. Get top 3 highest paid employees in each department
+
+Tables: Employees
+
+-- Answer 1 (ROW_NUMBER filter)
+
+WITH ranked AS (
+  SELECT emp_id, emp_name, dept_id, salary,
+         ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS rn
+  FROM Employees
+)
+SELECT *
+FROM ranked
+WHERE rn <= 3;
+Select * From ranked where ranked_salary <= 3
+
+
+
+35. Concatenate first and last name into full name
+
+Assume table:
+UserInfo(user_id, first_name, last_name)
+
+-- Answer 1
+SELECT user_id, CONCAT(first_name, ' ', last_name) AS full_name
+FROM UserInfo;
+
+36. Extract year and month from order_date
+
+Tables: Orders
+-- Answer 1
+SELECT order_id,
+       YEAR(order_date) AS order_year,
+       MONTH(order_date) AS order_month
+FROM Orders;
+
+
+37. Get orders placed in last 30 days
+
+Tables: Orders
+
+Select * From Orders
+Where CURDATE() - INTERVAL - 30 DAYS
+
+38. Count orders per month
+
+Tables: Orders
+
+-- Alternative (group by year, month)
+SELECT YEAR(order_date) AS order_year,
+       MONTH(order_date) AS order_month,
+       COUNT(*) AS order_count
+FROM Orders
+GROUP BY YEAR(order_date), MONTH(order_date);
+
+
+40. Replace NULL city with 'Unknown'
+
+Tables: Customers
+
+-- Answer 1
+SELECT cust_id, cust_name,
+       COALESCE(city, 'Unknown') AS city
+FROM Customers;
+
+41–50: Duplicates, Anti-joins, Date Ranges
+
+41. Find duplicate customer names
+
+Tables: Customers
+
+-- Answer 1
+SELECT cust_name, COUNT(*) AS cnt
+FROM Customers
+GROUP BY cust_name
+HAVING COUNT(*) > 1;
+
+
+42. Delete duplicate customers keeping smallest cust_id
+
+Tables: Customers
+
+-- Alternative (using NOT IN)
+DELETE FROM Customers
+WHERE cust_id NOT IN (
+  SELECT MIN(cust_id)
+  FROM Customers
+  GROUP BY cust_name
+);
+
+
+
+43. Find students enrolled in more than 3 courses
+
+Tables: Enrollments, Students
+
+-- Answer 1
+SELECT s.student_name, COUNT(e.course_id) AS total_courses
+FROM Students s
+JOIN Enrollments e ON s.student_id = e.student_id
+GROUP BY s.student_id, s.student_name
+HAVING COUNT(e.course_id) > 3;
+
+44. Find courses with no enrolled students
+
+Tables: Courses, Enrollments
+
+SELECT c.*
+FROM Courses c
+LEFT JOIN Enrollments e ON c.course_id = e.course_id
+WHERE e.enrollment_id IS NULL;
+
+
+45. Find overlapping bookings
+
+Bookings(booking_id, room_id, start_date, end_date)
+
+
+-- Answer 1 (self-join)
+SELECT b1.booking_id AS booking1,
+       b2.booking_id AS booking2,
+       b1.room_id
+FROM Bookings b1
+JOIN Bookings b2
+  ON b1.room_id = b2.room_id
+ AND b1.booking_id < b2.booking_id
+ AND b1.start_date < b2.end_date
+ AND b2.start_date < b1.end_date;
+
+
+ 46.  total amount per status per customer
+
+ Tables: Customers, Orders
+
+ -- Alternative (just grouped)
+ SELECT c.cust_name, o.status, SUM(o.amount) AS total_amount
+ FROM Customers c
+ JOIN Orders o ON c.cust_id = o.cust_id
+ GROUP BY c.cust_name, o.status;
+
+
+48. Find each customer’s latest order
+
+Tables: Customers, Orders
+
+-- Alternative (window function)
+WITH ranked AS (
+  SELECT o.*,
+         ROW_NUMBER() OVER (PARTITION BY cust_id ORDER BY order_date DESC, order_id DESC) AS rn
+  FROM Orders o
+)
+SELECT *
+FROM ranked
+WHERE rn = 1;
+
+
+
+49. Customers with total order > 5000 and at least 3 orders
+
+Tables: Customers, Orders
+
+-- Answer 1
+SELECT c.cust_name,
+       COUNT(o.order_id) AS order_count,
+       SUM(o.amount) AS total_amount
+FROM Customers c
+JOIN Orders o ON c.cust_id = o.cust_id
+GROUP BY c.cust_id, c.cust_name
+HAVING SUM(o.amount) > 5000
+   AND COUNT(o.order_id) >= 3;
+
+
+50. Find departments where every employee earns more than 40k
+
+Tables: Employees, Departments
+
+-- Answer 1 (NOT EXISTS)
+SELECT d.*
+FROM Departments d
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM Employees e
+  WHERE e.dept_id = d.dept_id
+    AND e.salary <= 40000
+);
+
