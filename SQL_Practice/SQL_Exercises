@@ -1,0 +1,135 @@
+HR Schema
+Employees(emp_id, emp_name, dept_id, salary, hire_date)
+Departments(dept_id, dept_name)
+
+Sales Schema
+Customers(cust_id, cust_name, city)
+Orders(order_id, cust_id, order_date, amount, status)
+
+Products Schema
+Products(prod_id, prod_name, category, price)
+OrderItems(order_id, prod_id, quantity, unit_price)
+
+School Schema
+Students(student_id, student_name, age)
+Courses(course_id, course_name)
+Enrollments(enrollment_id, student_id, course_id, grade)
+
+
+1. Select all employees from a department
+Tables: Employees
+Question: Get all employees from department dept_id = 3.
+
+-- Answer 1
+SELECT *
+FROM Employees
+WHERE dept_id = 3;
+
+-- Alternative
+SELECT emp_id, emp_name, dept_id, salary, hire_date
+FROM Employees
+WHERE dept_id = 3;
+
+
+2. Order employees by salary descending
+Tables: Employees
+-- Answer 1
+SELECT emp_id, emp_name, salary
+FROM Employees
+ORDER BY salary DESC;
+
+-- Alternative (limit top 10)
+SELECT emp_id, emp_name, salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 10;
+
+
+3. Get distinct cities of customers
+Tables: Customers
+
+-- Answer 1
+SELECT DISTINCT city
+FROM Customers;
+
+
+4. Count how many orders each status has
+Tables: Orders
+-- Answer 1
+SELECT status, COUNT(*) AS total_orders
+FROM Orders
+GROUP BY status;
+
+5. Get employees with salary between 50k and 80k
+Tables: Employees
+-- Answer 1
+SELECT emp_name, salary
+FROM Employees
+WHERE salary BETWEEN 50000 AND 80000;
+
+-- Alternative (without BETWEEN)
+SELECT emp_name, salary
+FROM Employees
+WHERE salary >= 50000
+  AND salary <= 80000;
+
+
+6. Get customers from specific cities
+Tables: Customers
+
+-- Answer 1
+SELECT cust_name, city
+FROM Customers
+WHERE city IN ('Dhaka', 'Chittagong');
+
+-- Alternative (OR)
+SELECT cust_name, city
+FROM Customers
+WHERE city = 'Dhaka'
+   OR city = 'Chittagong';
+
+7. Search customers whose name starts with 'M'
+Tables: Customers
+-- Answer 1
+SELECT *
+FROM Customers
+WHERE cust_name LIKE 'M%';
+
+-- Alternative (case-insensitive if needed)
+SELECT *
+FROM Customers
+WHERE LOWER(cust_name) LIKE 'm%';
+
+
+8. Get top 5 highest paid employees
+Tables: Employees
+-- Answer 1
+SELECT emp_id, emp_name, salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 5;
+
+9. Count total number of employees
+
+Tables: Employees
+-- Answer 1
+SELECT COUNT(*) AS total_employees
+FROM Employees;
+
+-- Alternative (count by PK)
+SELECT COUNT(emp_id) AS total_employees
+FROM Employees;
+
+10. Get employees hired after 2023-01-01
+
+Tables: Employees
+-- Answer 1
+SELECT *
+FROM Employees
+WHERE hire_date > '2023-01-01';
+
+-- Alternative (>= specific day)
+SELECT *
+FROM Employees
+WHERE hire_date >= '2023-01-02';
+
