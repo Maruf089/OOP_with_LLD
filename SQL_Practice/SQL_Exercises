@@ -133,3 +133,328 @@ SELECT *
 FROM Employees
 WHERE hire_date >= '2023-01-02';
 
+
+11–20: Joins & Aggregations
+11. List employees with their department names (INNER JOIN)
+
+Tables: Employees, Departments
+-- Answer 1
+SELECT e.emp_name, d.dept_name
+FROM Employees e
+JOIN Departments d ON e.dept_id = d.dept_id;
+
+-- Alternative (explicit INNER JOIN keyword)
+SELECT e.emp_name, d.dept_name
+FROM Employees AS e
+INNER JOIN Departments AS d
+        ON e.dept_id = d.dept_id;
+
+12. List all departments and their employees (LEFT JOIN)
+
+Tables: Employees, Departments
+-- Answer 1
+SELECT d.dept_name, e.emp_name
+FROM Departments d
+LEFT JOIN Employees e ON d.dept_id = e.dept_id;
+
+-- Alternative (group by dept)
+SELECT d.dept_name, COUNT(e.emp_id) AS employee_count
+FROM Departments d
+LEFT JOIN Employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name;
+
+
+13. List customers and their orders (even if no orders)
+
+Tables: Customers, Orders
+-- Answer 1
+SELECT c.cust_name, o.order_id, o.amount
+FROM Customers c
+LEFT JOIN Orders o ON c.cust_id = o.cust_id;
+
+-- Alternative (show only customers with no orders)
+SELECT c.cust_name
+FROM Customers c
+LEFT JOIN Orders o ON c.cust_id = o.cust_id
+WHERE o.order_id IS NULL;
+
+
+14. Get total order amount per customer
+
+Tables: Customers, Orders
+-- Answer 1
+SELECT c.cust_name, SUM(o.amount) AS total_spent
+FROM Customers c
+JOIN Orders o ON c.cust_id = o.cust_id
+GROUP BY c.cust_id, c.cust_name;
+
+-- Alternative (order by total_spent desc)
+SELECT c.cust_name, SUM(o.amount) AS total_spent
+FROM Customers c
+JOIN Orders o ON c.cust_id = o.cust_id
+GROUP BY c.cust_id, c.cust_name
+ORDER BY total_spent DESC;
+
+
+15. Get number of employees in each department
+
+Tables: Employees, Departments
+-- Answer 1
+SELECT d.dept_name, COUNT(e.emp_id) AS employee_count
+FROM Departments d
+LEFT JOIN Employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name;
+
+-- Alternative (group by id + name)
+SELECT d.dept_id, d.dept_name, COUNT(e.emp_id) AS employee_count
+FROM Departments d
+LEFT JOIN Employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_id, d.dept_name;
+
+
+✔ Why LEFT JOIN?
+
+Ensures all departments appear, even if they have zero employees.
+
+Departments with no employees will show EmployeeCount = 0.
+
+📌 If you want to show only departments that actually have employees, use INNER JOIN:
+
+SELECT d.DepartmentName,
+       COUNT(e.EmployeeID) AS EmployeeCount
+FROM Departments d
+INNER JOIN Employees e
+    ON d.DepartmentID = e.DepartmentID
+GROUP BY d.DepartmentID, d.DepartmentName;
+
+
+16. Average salary per department
+
+Tables: Employees, Departments
+-- Answer 1
+SELECT d.dept_name, AVG(e.salary) AS avg_salary
+FROM Departments d
+JOIN Employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name;
+
+-- Alternative (round avg)
+SELECT d.dept_name, ROUND(AVG(e.salary), 2) AS avg_salary
+FROM Departments d
+JOIN Employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name;
+
+
+17. Get total quantity sold per product
+
+Tables: Products, OrderItems
+-- Answer 1
+SELECT p.prod_name, SUM(oi.quantity) AS total_qty
+FROM Products p
+JOIN OrderItems oi ON p.prod_id = oi.prod_id
+GROUP BY p.prod_name;
+
+-- Alternative (group by id)
+SELECT p.prod_id, p.prod_name, SUM(oi.quantity) AS total_qty
+FROM Products p
+JOIN OrderItems oi ON p.prod_id = oi.prod_id
+GROUP BY p.prod_id, p.prod_name;
+
+
+18. Get total revenue per product
+
+Tables: Products, OrderItems
+-- Answer 1
+SELECT p.prod_name,
+       SUM(oi.quantity * oi.unit_price) AS total_revenue
+FROM Products p
+JOIN OrderItems oi ON p.prod_id = oi.prod_id
+GROUP BY p.prod_name;
+
+
+19. List customers who made orders over 10,000 total
+
+Tables: Customers, Orders
+-- Answer 1
+SELECT c.cust_name, SUM(o.amount) AS total_spent
+FROM Customers c
+JOIN Orders o ON c.cust_id = o.cust_id
+GROUP BY c.cust_id, c.cust_name
+HAVING SUM(o.amount) > 10000;
+
+-- Alternative (subquery)
+SELECT cust_name, total_spent
+FROM (
+  SELECT c.cust_name, SUM(o.amount) AS total_spent
+  FROM Customers c
+  JOIN Orders o ON c.cust_id = o.cust_id
+  GROUP BY c.cust_id, c.cust_name
+) t
+WHERE total_spent > 10000;
+
+
+
+20. Departments with more than 5 employees
+
+Tables: Employees, Departments
+-- Answer 1
+SELECT d.dept_name, COUNT(e.emp_id) AS employee_count
+FROM Departments d
+JOIN Employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name
+HAVING COUNT(e.emp_id) > 5;
+
+
+
+21–30: Subqueries, EXISTS, Updates, Deletes
+21. Find employees with salary above department average
+
+Tables: Employees
+
+-- Alternative (where + subquery)
+SELECT emp_name, salary
+FROM Employees e
+WHERE salary >
+      (
+        SELECT AVG(e2.salary)
+        FROM Employees e2
+        WHERE e2.dept_id = e.dept_id
+      );
+
+
+22. Find customers who have never placed an order
+
+Tables: Customers, Orders
+-- Answer 1 (LEFT JOIN)
+SELECT c.*
+FROM Customers c
+LEFT JOIN Orders o ON c.cust_id = o.cust_id
+WHERE o.order_id IS NULL;
+
+-- Alternative (NOT IN)
+SELECT *
+FROM Customers
+WHERE cust_id NOT IN (
+  SELECT DISTINCT cust_id FROM Orders
+);
+
+
+23. Find products that were never ordered
+
+Tables: Products, OrderItems
+-- Answer 1 (LEFT JOIN)
+SELECT p.*
+FROM Products p
+LEFT JOIN OrderItems oi ON p.prod_id = oi.prod_id
+WHERE oi.order_id IS NULL;
+
+-- Alternative (NOT EXISTS)
+SELECT *
+FROM Products p
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM OrderItems oi
+  WHERE oi.prod_id = p.prod_id
+);
+
+
+24. Increase salary by 10% for employees in dept 2
+
+Tables: Employees
+-- Answer 1
+UPDATE Employees
+SET salary = salary * 1.10
+WHERE dept_id = 2;
+
+-- Alternative (round to integer)
+UPDATE Employees
+SET salary = ROUND(salary * 1.10)
+WHERE dept_id = 2;
+
+
+25. Delete orders with status = 'CANCELLED'
+
+Tables: Orders
+-- Answer 1
+DELETE FROM Orders
+WHERE status = 'CANCELLED';
+
+-- Alternative (safe: only older than specific date)
+DELETE FROM Orders
+WHERE status = 'CANCELLED'
+  AND order_date < '2024-01-01';
+
+26. Insert a new customer
+
+Tables: Customers
+-- Answer 1
+INSERT INTO Customers (cust_id, cust_name, city)
+VALUES (101, 'Maruf Hasan', 'Dhaka');
+
+-- Alternative (auto-increment id, omit cust_id)
+INSERT INTO Customers (cust_name, city)
+VALUES ('Maruf Hasan', 'Dhaka');
+
+
+27. Insert into Orders from a SELECT
+
+Tables: Customers, Orders
+-- Answer 1
+
+INSERT INTO Orders (order_id, cust_id, order_date, amount, status)
+SELECT 1001, c.cust_id, CURDATE(), 5000, 'NEW'
+FROM Customers c
+WHERE c.cust_name = 'Maruf Hasan';
+
+-- Alternative (auto-increment order_id)
+INSERT INTO Orders (cust_id, order_date, amount, status)
+SELECT c.cust_id, CURDATE(), 5000, 'NEW'
+FROM Customers c
+WHERE c.cust_name = 'Maruf Hasan';
+
+
+
+28. Get second highest salary
+
+Tables: Employees
+
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET 1;
+
+28> N-th Highest Salary (MySQL LIMIT method)
+
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET N-1;
+
+
+29. Get employees who earn more than any employee in dept 3
+
+Tables: Employees
+
+-- Alternative (greater than max of dept 3)
+SELECT *
+FROM Employees
+WHERE salary > (
+  SELECT MAX(salary)
+  FROM Employees
+  WHERE dept_id = 3
+);
+
+
+30. Get employees whose salary is more than all total employees in dept 4
+
+Tables: Employees
+
+-- Alternative (greater than max)
+SELECT *
+FROM Employees
+WHERE salary > (
+  SELECT SUM(salary)
+  FROM Employees
+  WHERE dept_id = 4
+);
+
+
