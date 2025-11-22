@@ -33,7 +33,7 @@ This is a example of Composition
 - Composition - One can't exist without another and is composed of another
 in the above Student can't exist without Account and is composed of Account
 
-- Aggregation - ( one to many relationship ) : Library and Book
+- Aggregation - special type of aggregation ( one to many relationship ) : Library and Book
 - Association - Two objects exist independently but they can interact ( many to many relationship ) : Course and Student
 
 
@@ -67,3 +67,16 @@ When we need only one like hierarchical reuse of code or subtype polymorphism, I
 that's why we should avoid inheritance.
 We should use composition + interface over inheritance
 
+
+
+Design a software at low level :
+1. Gather requirement : User stories
+2. Identify actor
+3. Identify class and add property,behavior,relations
+4. Apply decomposition and generalization - follow SOLID, DRY, KISS
+5. Identify Service class
+6. Apply Solid and Design Patterns
+
+
+Funtional Programming easier.
+OOP hard but maintenance easy, changes easy to absorb.

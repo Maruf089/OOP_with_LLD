@@ -1,0 +1,20 @@
+Functional Requirements:
+As a user, I should be able to login
+As a user, I should be able to search for an event
+As a user, I should be able to select an event
+As a user, I should be able to book an event
+As a user, I should be able to make payment
+As  a user, I should get notification when booking is confirmed
+As an admin, I should be able to create and update events
+
+Actor:
+- User
+- Admin
+
+Candidate Class
+- User :
+- Admin :
+- Event : date, title
+- Payment : id, amount, Booking booking
+- Notification : EventId, Payment payment, content
+- Booking :
