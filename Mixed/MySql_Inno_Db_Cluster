@@ -347,3 +347,95 @@ dbwebapp connects to DBHOST=mysql-router, DBPORT=6446, DBUSER=dbwebapp, DBPASS=d
 From its perspective, it’s just talking to a normal MySQL server, but behind the scenes it’s a cluster with multiple members and automatic routing.
 
 
+
+✔ If you want automatic read/write splitting
+MySQL Router cannot do it.
+
+But ProxySQL can.
+
+ProxySQL supports:
+
+Parsing queries
+
+Automatic read/write splitting
+
+
+🚦 Summary: What you use and when
+Scenario	Use Port
+Normal application (read/write)	6446
+Heavy read workload / split read-write	6446 for writes + 6447 for reads
+
+
+
+
+####### Why people use Docker Swarm for multi-host DBs
+
+Swarm is an orchestrator. For a multi-node database like your InnoDB Cluster, it gives you:
+
+🕸️ 1) Built-in multi-host networking
+
+Swarm creates overlay networks that span nodes.
+
+Your services talk to each other by service name:
+
+mysql-server-1, mysql-server-2, mysql-router, etc.
+
+You don’t deal with raw IPs or manual host files.
+
+For a DB cluster where nodes need to see each other reliably, this is convenient.
+Simple to use and good for small projects
+
+
+🐢 3) Overlay network latency
+
+Overlay networks are slightly slower than bare-metal / bridge networking.
+For high-traffic DBs, this overhead can matter.
+
+
+
+3. Alternatives to Docker Swarm for multi-host databases
+🏗️ A. Kubernetes (K8s)
+
+The most common Swarm alternative.
+
+What you’d gain:
+
+- Stable pod names (mysql-0, mysql-1, mysql-2)
+- Stable storage via PersistentVolumeClaims
+- Rich ecosystem
+
+Better primitives for:
+
+- health checks
+- rolling updates
+
+
+B. Managed databases (best in production)
+
+Instead of orchestrating DB containers at all, you can use:
+
+AWS: Aurora MySQL
+Azure: Azure Database for MySQL
+
+Pros:
+No worrying about:
+volumes
+replication
+failover
+
+You just point your app at a hostname and port.
+
+
+
+
+
+The decision to use Docker Swarm was based on organization constraints, and my role was to deliver a reliable multi-host database cluster
+- Easier and quicker to deploy than Kubernetes.
+- Lower operational overhead.
+- Perfect for teams without dedicated DevOps resources.
+
+“I’m fully aware that Docker Swarm isn’t ideal for large-scale workloads
+“In an ideal environment I would use:
+‣ Kubernetes + a MySQL Operator, or
+‣ A cloud-managed database like Aurora
+because they give more advanced capabilities
