@@ -1,0 +1,349 @@
+1. High-level overview
+
+Your docker-compose.yaml spins up a mini MySQL InnoDB Cluster with:
+
+3 MySQL server instances (mysql-server-1, mysql-server-2, mysql-server-3)
+
+A MySQL Shell batch container (mysql-shell) that:
+
+Creates the InnoDB Cluster
+
+Creates a database and app user using db.sql
+
+A MySQL Router (mysql-router) that sits in front of the cluster
+
+A web app (dbwebapp) that connects to the database via the Router
+
+So conceptually:
+
+dbwebapp → mysql-router → InnoDB Cluster (mysql-server-1/2/3)
+
+2. /scripts/db.sql
+
+CREATE DATABASE dbwebappdb;
+CREATE USER 'dbwebapp'@'%' IDENTIFIED BY 'dbwebapp';
+GRANT ALL PRIVILEGES ON dbwebappdb.* TO 'dbwebapp'@'%';
+
+
+This SQL script does three things:
+
+This SQL script does three things:
+
+- Creates the application database
+- Creates a database user
+    Username: dbwebapp
+    Password: dbwebapp
+    Host: % → can connect from any host (in your Compose network, that means any container)
+
+- Grants privileges to that user on the app DB
+    Gives full access on all tables in dbwebappdb to the dbwebapp user.
+
+This script is later executed by the mysql-shell container once the cluster is up.
+
+
+3. /scripts/setupCluster.js
+
+var dbPass = "mysql"
+var clusterName = "devCluster"
+
+try {
+  print('Setting up InnoDB cluster...\n');
+  shell.connect('root@mysql-server-1:3306', dbPass)
+  var cluster = dba.createCluster(clusterName);
+  print('Adding instances to the cluster.');
+  cluster.addInstance({user: "root", host: "mysql-server-2", password: dbPass})
+  print('.');
+  cluster.addInstance({user: "root", host: "mysql-server-3", password: dbPass})
+  print('.\nInstances successfully added to the cluster.');
+  print('\nInnoDB cluster deployed successfully.\n');
+} catch(e) {
+  print('\nThe InnoDB cluster could not be created.\n\nError: ' + e.message + '\n');
+}
+
+
+
+This is a MySQL Shell JavaScript script. It automates cluster creation using MySQL’s dba API:
+
+dbPass = "mysql"
+This is the root password for MySQL (matches MYSQL_ROOT_PASSWORD in the Compose file).
+
+clusterName = "devCluster"
+Name of your InnoDB Cluster.
+
+Steps performed:
+
+- Connect as root to mysql-server-1
+
+    shell.connect('root@mysql-server-1:3306', dbPass)
+
+This uses the internal Docker networking, so mysql-server-1 is resolved by service name.
+
+- Create the InnoDB Cluster
+
+    var cluster = dba.createCluster(clusterName);
+
+This initializes a new InnoDB Cluster with mysql-server-1 as the first (primary) instance.
+
+- Add the other MySQL instances to the cluster
+
+    cluster.addInstance({user: "root", host: "mysql-server-2", password: dbPass})
+    cluster.addInstance({user: "root", host: "mysql-server-3", password: dbPass})
+
+Both mysql-server-2 and mysql-server-3 join the cluster as additional members (replicas/group members).
+
+- Error handling
+
+If anything goes wrong (connection issues, misconfiguration, etc.), it prints an error message instead of crashing silently.
+
+
+So: this script transforms three standalone MySQL servers into one InnoDB Cluster.
+
+
+4. docker-compose.yaml: service-by-service
+4.1 mysql-server-1, mysql-server-2, mysql-server-3
+
+All three use the same base image:
+image: mysql/mysql-server:8.0.12
+
+They differ mainly in server_id, ports, and a few replication-related options.
+
+Common settings
+
+For each:
+    Root password is mysql.
+
+    Root can connect from any host (%), which is required for other members and tools to connect.
+
+Common mysqld options:
+
+command:
+  [
+    "mysqld",
+    "--server_id=X",
+    "--binlog_checksum=NONE",
+    "--gtid_mode=ON",
+    "--enforce_gtid_consistency=ON",
+    "--log_bin",
+    "--log_slave_updates=ON",
+    "--master_info_repository=TABLE",
+    "--relay_log_info_repository=TABLE",
+    "--transaction_write_set_extraction=XXHASH64",
+    "--user=mysql",
+    "--skip-host-cache",
+    "--skip-name-resolve",
+    "--default_authentication_plugin=mysql_native_password",
+  ]
+
+Key points:
+
+--server_id=1/2/3
+Each server needs a unique ID for replication.
+
+GTID & binlog settings:
+
+    --gtid_mode=ON
+
+    --enforce_gtid_consistency=ON
+
+    --log_bin
+
+    --log_slave_updates=ON
+
+    Repositories in TABLE
+
+These are required for Group Replication / InnoDB Cluster.
+
+
+
+--transaction_write_set_extraction=XXHASH64
+Used by Group Replication to detect conflicts.
+
+--default_authentication_plugin=mysql_native_password
+For compatibility with clients that don’t support caching_sha2_password.
+
+--skip-host-cache, --skip-name-resolve
+Avoid DNS-related delays/issues.
+
+
+Volumes & Swarm placement
+volumes:
+  - /mysql-data:/var/lib/mysql
+deploy:
+  placement:
+    constraints: [node.labels.type == mysql-worker-3]
+
+- /mysql-data:/var/lib/mysql
+Maps MySQL data directory to /mysql-data on the host. In Docker Swarm this would be per node, but note all three reference the same host path—this only really makes sense if they end up on different hosts or you’re okay with shared/overlapping path semantics (in real HA setups, each instance usually has its own volume).
+
+deploy.placement.constraints
+This is a Swarm-only feature (ignored by plain docker-compose up). It pins these services to nodes labeled type == mysql-worker-3.
+
+
+4.2 mysql-shell
+mysql-shell:
+  entrypoint:
+    - MYSQL_USER=root
+    - MYSQL_HOST=mysql-server-1
+    - MYSQL_PORT=3306
+    - MYSQL_PASSWORD=mysql
+    - MYSQLSH_SCRIPT=/scripts/setupCluster.js
+    - MYSQL_SCRIPT=/scripts/db.sql
+  image: neumayer/mysql-shell-batch
+  volumes:
+    - ./scripts/:/scripts/
+  depends_on:
+    - mysql-server-1
+    - mysql-server-2
+    - mysql-server-3
+  deploy:
+    placement:
+      constraints: [node.labels.type == leader]
+
+Purpose: bootstrap the cluster and database.
+
+Image: neumayer/mysql-shell-batch
+This is a wrapper around MySQL Shell to run a script in batch mode.
+
+volumes: ./scripts/:/scripts/
+Mounts your local scripts directory (where db.sql and setupCluster.js live) into the container at /scripts.
+
+The entrypoint section is being used to pass configuration; typically these would be environment variables, but the idea is:
+
+MYSQL_USER=root
+
+MYSQL_HOST=mysql-server-1
+
+MYSQL_PORT=3306
+
+MYSQL_PASSWORD=mysql
+
+MYSQLSH_SCRIPT=/scripts/setupCluster.js → JS file to set up the cluster.
+
+MYSQL_SCRIPT=/scripts/db.sql → SQL file to create DB/user.
+
+The image is designed to:
+
+Use MySQL Shell to run setupCluster.js to create the InnoDB Cluster.
+
+Then connect and run db.sql to create the dbwebappdb database and user.
+
+depends_on
+Ensures all three MySQL servers start before mysql-shell runs its scripts.
+
+Placement constraint: runs on the leader node.
+
+
+4.3 mysql-router
+mysql-router:
+  environment:
+    - MYSQL_USER=root
+    - MYSQL_HOST=mysql-server-1
+    - MYSQL_PORT=3306
+    - MYSQL_PASSWORD=mysql
+    - MYSQL_INNODB_NUM_MEMBERS=3
+  image: mysql/mysql-router:8.0
+  ports:
+    - "6446:6446"
+  depends_on:
+    - mysql-server-1
+    - mysql-server-2
+    - mysql-server-3
+    - mysql-shell
+  restart: on-failure
+  deploy:
+    placement:
+      constraints: [node.labels.type == leader]
+
+
+Purpose: provide a single, HA endpoint to the application, abstracting away the individual MySQL instances.
+
+Environment:
+
+MYSQL_USER, MYSQL_PASSWORD, etc. are used to let Router bootstrap itself against the InnoDB Cluster.
+
+MYSQL_INNODB_NUM_MEMBERS=3 tells it to expect 3 cluster members
+
+
+Exposes MySQL Router’s classic MySQL port on host 6446.
+
+Inside Docker, other containers can reach it at mysql-router:6446.
+
+depends_on includes mysql-shell, so Router starts after the cluster is created and DB initialized.
+
+restart: on-failure
+Router will auto-restart if it crashes.
+
+
+4.4 dbwebapp
+dbwebapp:
+  environment:
+    - DBUSER=dbwebapp
+    - DBPASS=dbwebapp
+    - DBNAME=dbwebappdb
+    - DBHOST=mysql-router
+    - DBPORT=6446
+  image: neumayer/dbwebapp
+  ports:
+    - "8080:8080"
+  depends_on:
+    - mysql-router
+
+This is your application container that connects to the database.
+
+It reads DB config from environment:
+
+DBUSER=dbwebapp
+
+DBPASS=dbwebapp
+
+DBNAME=dbwebappdb
+
+DBHOST=mysql-router (service name)
+
+DBPORT=6446 (MySQL Router’s port)
+
+Because everything is on the default Docker network, the app can simply use mysql-router as the hostname.
+
+Exposes HTTP on 8080:8080, so you can browse the web app via http://localhost:8080 (or the Swarm node where it runs).
+
+depends_on: mysql-router ensures the app only starts after Router is running.
+
+
+5. Startup flow in plain English
+
+MySQL instances start
+mysql-server-1, mysql-server-2, mysql-server-3 start up with GTID, binlogs, and all options needed for Group Replication/InnoDB Cluster.
+
+MySQL Shell bootstraps the cluster & DB
+
+mysql-shell runs:
+
+Connects to mysql-server-1 as root.
+
+Runs setupCluster.js to create devCluster and add server 2 & 3.
+
+Executes db.sql to:
+
+Create database dbwebappdb.
+
+Create user dbwebapp with password dbwebapp.
+
+Grant privileges.
+
+MySQL Router configures itself
+
+mysql-router uses the root credentials to:
+
+Discover the InnoDB Cluster on mysql-server-1.
+
+Generate routing config.
+
+Provide a unified endpoint at mysql-router:6446.
+
+Application connects
+
+dbwebapp connects to DBHOST=mysql-router, DBPORT=6446, DBUSER=dbwebapp, DBPASS=dbwebapp.
+
+From its perspective, it’s just talking to a normal MySQL server, but behind the scenes it’s a cluster with multiple members and automatic routing.
+
+
