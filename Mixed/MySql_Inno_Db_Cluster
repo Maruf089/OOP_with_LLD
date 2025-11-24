@@ -439,3 +439,5 @@ The decision to use Docker Swarm was based on organization constraints, and my r
 ‣ Kubernetes + a MySQL Operator, or
 ‣ A cloud-managed database like Aurora
 because they give more advanced capabilities
+
+

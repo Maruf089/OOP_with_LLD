@@ -1,0 +1,43 @@
+RabbitMQ uses exchanges to route messages to queues.
+There are four main exchange types:
+1️⃣ Direct Exchange
+- Routing based on exact matching of the routing key
+- Message is delivered to the queue whose binding key == routing key
+
+I used this because Perfect for simple, fixed routing. Our project has only one consumer.
+
+2️⃣ Fanout Exchange
+Broadcast messages to ALL queues bound to the exchange
+
+- Ignores routing key
+- Every queue gets a copy of the message
+
+Use cases
+Send notifications to many services
+
+3️⃣ Topic Exchange
+- Routing using wildcard patterns
+
+Region-based routing (asia., eu., us.#)
+
+
+4️⃣ Headers Exchange
+Routing based on message headers instead of routing key
+
+- Match headers with key-value pairs
+
+
+
+##### When we need to use Kafka over rabbitmq
+
+Kafka is preferred over RabbitMQ in scenarios requiring high-throughput, real-time data streaming.
+High Throughput and Scalability: Kafka is designed for handling massive volumes of data at high speeds, capable of processing millions of messages per second.
+
+Real-time Data Processing and Analytics: When building systems that require real-time data processing, and analysis, such as log aggregation, real-time analytics dashboards,
+ Kafka's stream-based architecture is highly advantageous.
+
+Message Retention and Replayability: Kafka retains messages for a configurable period, enabling consumers to re-read messages or catch up if they fall behind. This is crucial for use cases like event sourcing, auditing, or disaster recovery.
+RabbitMQ, in contrast, typically deletes messages after consumption.
+
+
+
