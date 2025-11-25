@@ -1,0 +1,46 @@
+Spring Boot 3 : Top 5 Features You Need to Know
+
+1. Class Data Sharing (CDS)
+2. Virtual Thread_Project Loom ( very light weight )
+
+
+
+Java 17 features
+
+1. Sealed Classes
+
+Restrict which classes or interfaces can extend/implement another class.
+
+public sealed class Vehicle permits Car, Bike {}
+public final class Car extends Vehicle {}
+public final class Bike extends Vehicle {}
+
+3. Records (Finalized)
+
+Compact syntax for immutable data carriers.
+
+
+4. Switch Expressions (Preview finalized)
+
+switch can return a value and supports arrow syntax.
+
+int numLetters = switch(day) {
+    case MONDAY, FRIDAY -> 6;
+    case TUESDAY -> 7;
+    default -> 0;
+};
+
+
+5. Text Blocks
+
+Multi-line string literals.
+
+String html = """
+    <html>
+      <body>
+        <p>Hello</p>
+      </body>
+    </html>
+    """;
+
+    \

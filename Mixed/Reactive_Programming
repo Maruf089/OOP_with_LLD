@@ -1,0 +1,5 @@
+Short Interview Answer
+
+Multithreading is about running multiple threads concurrently, often blocking on I/O, and manually handling synchronization.
+Reactive Programming is about asynchronous, non-blocking, event-driven data streams with automatic backpressure, allowing a few threads to handle many tasks efficiently.
+

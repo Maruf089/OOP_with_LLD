@@ -1,0 +1,55 @@
+🏁 Quick Interview Answer
+
+MySQL (InnoDB) uses a B+Tree for indexes.
+
+The primary key index is a clustered B+Tree where leaf nodes store full row data.
+
+Secondary indexes are non-clustered B+Trees where leaf nodes store the primary key as a pointer.
+
+B+Trees are used because they minimize disk I/O by keeping the tree shallow and enabling fast range queries.
+
+
+
+🔍 1. Data Storage Difference
+B-Tree
+Internal Node:
+   [K1 | P1] [K2 | P2 | Data2] [K3 | P3 | Data3]
+
+
+Data can appear in any node.
+
+B+ Tree
+Internal Node:
+   [K1 | P1] [K2 | P2] [K3 | P3]
+
+Leaf Node:
+   [K1, Data1] - [K2, Data2] - [K3, Data3] (linked list)
+
+
+Internal nodes = keys only
+
+Leaf nodes = key + full row pointer
+
+🔍 2. Performance Differences
+✔️ Point Lookup
+
+B-Tree may find data early → slightly faster.
+
+B+ Tree always goes to leaf → consistent lookup time.
+
+✔️ Range Scans
+
+B+ Tree wins — massively.
+
+Range query = traverse leaf linked list → O(k) for k results.
+
+That’s why databases use B+ Trees
+
+
+
+
+✅ B-Tree vs B+ Tree — Key Differences
+Feature	        B-Tree	                                            B+ Tree
+Data storage	Keys + data stored in both internal & leaf nodes	Keys stored in internal nodes, data only stored in leaf nodes
+Search path	May end early in an internal node (faster)	            Must always go to leaf nodes (uniform search time)
+Range queries	Slower (must traverse tree)	                        Very fast — leaves are linked in a linked list

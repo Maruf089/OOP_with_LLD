@@ -1,0 +1,7 @@
+1. Array vs ArrayList
+
+| Feature | **Array**                       | **ArrayList**                     |
+| ------- | ------------------------------- | --------------------------------- |
+| Type    | **Built-in language construct** | **Class in `java.util` package`** |
+
+
